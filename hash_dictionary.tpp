@@ -116,16 +116,63 @@ void HashDictionary<KeyType, ValueType, HashType>::add(const KeyType &key,
     // TODO implement the add method...
     
     // 1. hash the key
-    
+    std::size_t index = m_hash(key) % m_capacity;
     
     // 2. do linear probing
-    
+    std::size_t num_probes = 0;
+    while((m_data[index].filled) && (num_probes < m_capacity))
+    {
+        if(m_data[index].key == key)
+        {
+            throw std::logic_error("Duplicate key found -- keys should be unique");
+        }
+        index = (index + 1) % m_capacity;
+        num_probes++;
+    }
+
     // 3. Check to see if linear probing has failed
-    
+    if(num_probes == m_capacity)
+    {
+        throw std::logic_error("Too many probes in HashDictionary");
+    }
+
     // 4. insert the key-value pair
+    m_data[index].filled = true;
+    m_data[index].key = key;
+    m_data[index].value = value;
+    m_size++;
    
-    // 5. test if we need to reallocate¡¡and reallocate if needed
-    
+    // 5. test if we need to reallocateï¿½ï¿½and reallocate if needed
+    if(m_size > m_load_factor * m_capacity)
+    {
+        std::size_t newcap = 2 * m_capacity;
+        while(!isprime(newcap))
+        {
+            newcap++;
+        }
+
+        KeyValueType *temp = new KeyValueType[newcap];
+
+        for(std::size_t i = 0; i < m_capacity; i++)
+        {
+            std::size_t newindex;
+            if(m_data[i].filled)
+            {
+                newindex = m_hash(m_data[i].key) % newcap;
+                while(temp[newindex].filled)
+                {
+                    newindex = (newindex+1) % newcap;
+                }
+                temp[newindex].filled = true;
+                temp[newindex].key = m_data[i].key;
+                temp[newindex].value = m_data[i].value;
+            }
+        }
+
+        delete[] m_data;
+        m_data = temp;
+        m_capacity = newcap;
+    }
       
 
 }
@@ -134,6 +181,14 @@ template <typename KeyType, typename ValueType, typename HashType>
 void HashDictionary<KeyType, ValueType, HashType>::remove(const KeyType &key) {
     
     //TODO implement the remove method...
+    std::size_t index = m_hash(key) % m_capacity;
+    if(m_data[index].key == key)
+    {
+        m_data[index].filled = false;
+        m_size--;
+        return;
+    }
+    throw std::logic_error("Key is not in HashDictionary");
 }
 
 template <typename KeyType, typename ValueType, typename HashType>
